@@ -6,6 +6,7 @@ import time
 
 
 BASE_URL = 'https://books.toscrape.com/catalogue/page-1.html'
+MAX_RETRIES = 3
 TIMEOUT = 10
 DELAY = 1
 SKIP_FIELDS = ['Number of reviews', 'Product Type','Tax', 'Price (incl. tax)']
@@ -31,6 +32,23 @@ class Book:
         return [self.title, self.upc, self.category, self.price_excl_tax, self.availability, self.description]
 
 
+def fetch_page(url):
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.get(url, timeout=TIMEOUT)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+            return response
+
+        except requests.RequestException as e:
+            print(f'Request failed for {url} (attempt {attempt + 1}/{MAX_RETRIES}): {e}')
+
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(2 ** attempt)
+
+    return None
+
+
 def get_book_links(soup, page_url):
     links = []
 
@@ -45,14 +63,12 @@ def get_book_links(soup, page_url):
 
 
 def scrape_book(url):
-    try:
-        response = requests.get(url, timeout=TIMEOUT)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        print(f'Skipping {url} - Request failed: {e}')
+    response = fetch_page(url)
+
+    if response is None:
+        print(f'Skipping {url} - Request failed after {MAX_RETRIES} attempts')
         return None
 
-    response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, 'lxml')
     info = {}
     table = soup.find('table', class_='table table-striped')
@@ -65,10 +81,10 @@ def scrape_book(url):
             info[label] = row.td.text
 
     title_block = soup.find('div', class_='col-sm-6 product_main')
-    info['Title'] = title_block.h1.text if title_block else 'No Title Available'
+    info['Title'] = title_block.h1.text.strip() if title_block else 'No Title Available'
     category_block = soup.find('ul', class_='breadcrumb')
     li_tags = category_block.find_all('li')
-    info['Category'] = li_tags[2].text
+    info['Category'] = li_tags[2].text.strip()
     description_block = soup.find('div', id='product_description')
     description_tag = description_block.find_next_sibling('p') if description_block else None
     info['Description'] = description_tag.text if description_tag else 'No Description Available'
@@ -85,10 +101,13 @@ def scrape_book(url):
 def main():
     current_url = BASE_URL
     books = []
+
     while True:
 
-        response = requests.get(current_url, timeout=TIMEOUT)
-        response.raise_for_status()
+        response = fetch_page(current_url)
+
+        if response is None:
+            break
 
         soup = BeautifulSoup(response.text, 'lxml')
 
