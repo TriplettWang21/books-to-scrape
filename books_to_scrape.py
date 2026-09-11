@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 import requests
 import csv
 import time
+from dataclasses import dataclass
 
 
 BASE_URL = 'https://books.toscrape.com/catalogue/page-1.html'
@@ -20,14 +21,15 @@ CSV_HEADERS = [
 ]
 
 
+@dataclass
 class Book:
-    def __init__(self, title, upc, category, price_excl_tax, availability, description):
-        self.title = title
-        self.upc = upc
-        self.category = category
-        self.price_excl_tax = price_excl_tax
-        self.availability = availability
-        self.description = description
+    title: str
+    upc: str
+    category: str
+    price_excl_tax: str
+    availability: str
+    description: str
+
     def to_csv_row(self):
         return [self.title, self.upc, self.category, self.price_excl_tax, self.availability, self.description]
 
