@@ -4,6 +4,7 @@ import requests
 import csv
 import time
 from dataclasses import dataclass
+import re
 
 
 BASE_URL = 'https://books.toscrape.com/catalogue/page-1.html'
@@ -16,7 +17,7 @@ CSV_HEADERS = [
     'UPC',
     'Category',
     'Price (excl. tax)',
-    'Availability',
+    'Available Count',
     'Description'
 ]
 
@@ -26,12 +27,12 @@ class Book:
     title: str
     upc: str
     category: str
-    price_excl_tax: str
-    availability: str
+    price_excl_tax: float
+    available_count: int
     description: str
 
     def to_csv_row(self):
-        return [self.title, self.upc, self.category, self.price_excl_tax, self.availability, self.description]
+        return [self.title, self.upc, self.category, self.price_excl_tax, self.available_count, self.description]
 
 
 def fetch_page(url):
@@ -90,12 +91,15 @@ def scrape_book(url):
     description_block = soup.find('div', id='product_description')
     description_tag = description_block.find_next_sibling('p') if description_block else None
     info['Description'] = description_tag.text if description_tag else 'No Description Available'
+    info['Price (excl. tax)'] = float(info['Price (excl. tax)'].strip('£'))
+    info['Available Count'] = int(re.search(r'\d+', info['Availability']).group())
+
     return Book(
         info['Title'], 
         info['UPC'], 
         info['Category'], 
         info['Price (excl. tax)'], 
-        info['Availability'], 
+        info['Available Count'], 
         info['Description']
         )
 
