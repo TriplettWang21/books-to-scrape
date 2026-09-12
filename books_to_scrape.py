@@ -35,10 +35,10 @@ class Book:
         return [self.title, self.upc, self.category, self.price_excl_tax, self.available_count, self.description]
 
 
-def fetch_page(url):
+def fetch_page(url, session):
     for attempt in range(MAX_RETRIES):
         try:
-            response = requests.get(url, timeout=TIMEOUT)
+            response = session.get(url, timeout=TIMEOUT)
             response.raise_for_status()
             response.encoding = 'utf-8'
             return response
@@ -65,8 +65,8 @@ def get_book_links(soup, page_url):
     return links
 
 
-def scrape_book(url):
-    response = fetch_page(url)
+def scrape_book(url, session):
+    response = fetch_page(url, session)
 
     if response is None:
         print(f'Skipping {url} - Request failed after {MAX_RETRIES} attempts')
@@ -105,12 +105,13 @@ def scrape_book(url):
 
 
 def main():
+    session = requests.Session()
     current_url = BASE_URL
     books = []
 
     while True:
 
-        response = fetch_page(current_url)
+        response = fetch_page(current_url, session)
 
         if response is None:
             break
@@ -120,7 +121,7 @@ def main():
         links = get_book_links(soup, current_url)
 
         for link in links:
-            info = scrape_book(link)
+            info = scrape_book(link, session)
             if info:
                 books.append(info)
 
