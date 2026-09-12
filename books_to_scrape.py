@@ -105,35 +105,35 @@ def scrape_book(url, session):
 
 
 def main():
-    session = requests.Session()
     current_url = BASE_URL
     books = []
 
-    while True:
+    with requests.Session() as session:
+        while True:
 
-        response = fetch_page(current_url, session)
+            response = fetch_page(current_url, session)
 
-        if response is None:
-            break
+            if response is None:
+                break
 
-        soup = BeautifulSoup(response.text, 'lxml')
+            soup = BeautifulSoup(response.text, 'lxml')
 
-        links = get_book_links(soup, current_url)
+            links = get_book_links(soup, current_url)
 
-        for link in links:
-            info = scrape_book(link, session)
-            if info:
-                books.append(info)
+            for link in links:
+                info = scrape_book(link, session)
+                if info:
+                    books.append(info)
 
-        next_button = soup.find('li', class_='next')
+            next_button = soup.find('li', class_='next')
 
-        if next_button is None:
-            break
+            if next_button is None:
+                break
 
-        next_href = next_button.a['href']
-        current_url = urljoin(current_url, next_href)
+            next_href = next_button.a['href']
+            current_url = urljoin(current_url, next_href)
 
-        time.sleep(DELAY)
+            time.sleep(DELAY)
 
     with open('bookstore_all_books.csv', 'w', newline='', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file)
