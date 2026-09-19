@@ -5,7 +5,7 @@ import csv
 import time
 from dataclasses import dataclass
 import re
-
+import logging
 
 BASE_URL = 'https://books.toscrape.com/catalogue/page-1.html'
 MAX_RETRIES = 3
@@ -21,6 +21,21 @@ CSV_HEADERS = [
     'Description'
 ]
 
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+    '%(asctime)s | %(levelname)s | %(message)s'
+)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+file_handler = logging.FileHandler('scraper.log')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 @dataclass
 class Book:
@@ -44,7 +59,9 @@ def fetch_page(url, session):
             return response
 
         except requests.RequestException as e:
-            print(f'Request failed for {url} (attempt {attempt + 1}/{MAX_RETRIES}): {e}')
+            logger.warning(
+                f'Request failed for {url} (attempt {attempt + 1}/{MAX_RETRIES}): {e}'
+                )
 
             if attempt < MAX_RETRIES - 1:
                 time.sleep(2 ** attempt)
@@ -69,7 +86,7 @@ def scrape_book(url, session):
     response = fetch_page(url, session)
 
     if response is None:
-        print(f'Skipping {url} - Request failed after {MAX_RETRIES} attempts')
+        logger.error(f'Skipping {url} - Request failed after {MAX_RETRIES} attempts')
         return None
 
     soup = BeautifulSoup(response.text, 'lxml')
@@ -107,6 +124,7 @@ def scrape_book(url, session):
 def main():
     current_url = BASE_URL
     books = []
+    logger.info('Scraper started')
 
     with requests.Session() as session:
         while True:
@@ -114,6 +132,7 @@ def main():
             response = fetch_page(current_url, session)
 
             if response is None:
+                logger.error(f'Failed to fetch catalogue page: {current_url} ')
                 break
 
             soup = BeautifulSoup(response.text, 'lxml')
@@ -140,7 +159,7 @@ def main():
         writer.writerow(CSV_HEADERS)
         for book in books:
             writer.writerow(book.to_csv_row())
-    print(f'Saved {len(books)} books to bookstore_all_books.csv')
+    logger.info(f'Saved {len(books)} books to bookstore_all_books.csv')
 
 
 if __name__ == '__main__':
