@@ -294,7 +294,11 @@ def test_scrape_book_missing_description_marker(mock_session, valid_book_soup):
     assert result == expected_book
 
 
-def test_scrape_book_missing_breadcrumb(mock_session, valid_book_soup):
+def test_scrape_book_missing_breadcrumb(
+        mock_session, 
+        valid_book_soup,
+        caplog
+    ):
     session, response = mock_session
 
     breadcrumb = valid_book_soup.find(
@@ -306,8 +310,19 @@ def test_scrape_book_missing_breadcrumb(mock_session, valid_book_soup):
 
     response.text = str(valid_book_soup)
 
-    with pytest.raises(AttributeError):
-        scrape_book("http://example.com/test_book", session)
+    expected_book = Book(
+        'Test Book',
+        'test-upc-123',
+        'Unknown',
+        12.99,
+        7,
+        'This is a test book description.'
+    )
+
+    result = scrape_book("http://example.com/test_book", session)
+
+    assert result == expected_book
+    assert 'No category available: http://example.com/test_book' in caplog.text
 
 
 def test_scrape_book_description_missing_next_sibling(mock_session, valid_book_soup):

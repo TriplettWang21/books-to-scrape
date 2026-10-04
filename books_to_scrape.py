@@ -129,8 +129,15 @@ def scrape_book(url, session):
     info['Title'] = title_block.h1.text.strip() if title_block else 'No Title Available'
 
     category_block = soup.find('ul', class_='breadcrumb')
-    li_tags = category_block.find_all('li')
-    info['Category'] = li_tags[2].text.strip()
+    if category_block:
+        li_tags = category_block.find_all('li')
+        info['Category'] = li_tags[2].text.strip()
+    else:
+        logger.warning(
+            'No category available: %s',
+            url
+        )
+        info['Category'] = 'Unknown'
 
     description_block = soup.find('div', id='product_description')
     description_tag = description_block.find_next_sibling('p') if description_block else None
