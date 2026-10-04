@@ -75,9 +75,34 @@ def get_book_links(soup, page_url):
     books = soup.find_all('article', class_='product_pod')
 
     for item in books:
-        href = item.h3.a['href']
-        full_link = urljoin(page_url, href)
-        links.append(full_link)
+        h3 = item.h3
+
+        if h3 is None:
+            logger.warning(
+            "Book card has no h3; skipping. Page: %s",
+            page_url
+            )
+            continue
+
+        link = h3.a
+
+        if link is None:
+            logger.warning(
+            "Book card has no link; skipping. Page: %s",
+            page_url
+            )
+            continue
+
+        href = link.get("href")
+
+        if href is None:
+            logger.warning(
+            "Book link has no href; skipping. Page: %s",
+            page_url
+            )
+            continue
+
+        links.append(urljoin(page_url, href))
 
     return links
 
@@ -102,13 +127,17 @@ def scrape_book(url, session):
 
     title_block = soup.find('div', class_='col-sm-6 product_main')
     info['Title'] = title_block.h1.text.strip() if title_block else 'No Title Available'
+
     category_block = soup.find('ul', class_='breadcrumb')
     li_tags = category_block.find_all('li')
     info['Category'] = li_tags[2].text.strip()
+
     description_block = soup.find('div', id='product_description')
     description_tag = description_block.find_next_sibling('p') if description_block else None
     info['Description'] = description_tag.text if description_tag else 'No Description Available'
+
     info['Price (excl. tax)'] = float(info['Price (excl. tax)'].strip('£'))
+    
     info['Available Count'] = int(re.search(r'\d+', info['Availability']).group())
 
     return Book(
