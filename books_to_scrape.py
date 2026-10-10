@@ -157,7 +157,7 @@ def scrape_book(url, session):
         )
 
 
-def main():
+def main(output_file='bookstore_all_books.csv'):
     current_url = BASE_URL
     books = []
     logger.info('Scraper started')
@@ -190,12 +190,12 @@ def main():
 
             time.sleep(DELAY)
 
-    with open('bookstore_all_books.csv', 'w', newline='', encoding='utf-8') as csv_file:
+    with open(output_file, 'w', newline='', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(CSV_HEADERS)
         for book in books:
             writer.writerow(book.to_csv_row())
-    logger.info(f'Saved {len(books)} books to bookstore_all_books.csv')
+    logger.info(f'Saved {len(books)} books to {output_file}')
 
 
 if __name__ == '__main__':
