@@ -62,7 +62,7 @@ def valid_book_html():
 
 
 @pytest.fixture
-def valid_book_soup(valid_book_html: LiteralString):
+def valid_book_soup(valid_book_html: str):
     return BeautifulSoup(valid_book_html, "lxml")
 
 
@@ -211,7 +211,7 @@ def test_fetch_page_retry_failure(mock_session: tuple[Mock, Mock], caplog: pytes
         call(2)
     ]
 
-def test_scrape_book_success(mock_session: tuple[Mock, Mock], valid_book_html: LiteralString):
+def test_scrape_book_success(mock_session: tuple[Mock, Mock], valid_book_html: str):
     session, response = mock_session
 
     response.text = valid_book_html
